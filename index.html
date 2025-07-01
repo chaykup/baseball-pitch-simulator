@@ -16,6 +16,7 @@
       z-index: 10;
     }
     label { display: block; margin: 5px 0; }
+    button { margin-top: 5px; width: 100%; }
   </style>
 </head>
 <body>
@@ -24,6 +25,7 @@
     <label>Initial Y Velocity: <input type="range" id="vy" min="-10" max="20" step="0.1" value="4"></label>
     <label>Initial Z Velocity: <input type="range" id="vz" min="-10" max="10" step="0.1" value="2"></label>
     <button id="launch">Launch</button>
+    <button id="reset">Reset</button>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
@@ -66,11 +68,12 @@
       light.position.set(10, 10, 10);
       scene.add(light);
 
-      // Camera
-      camera.position.set(0, 2, 10);
+      // Camera initial zoomed-out position
+      camera.position.set(0, 10, 30);
       camera.lookAt(0, 1, 0);
 
       document.getElementById("launch").addEventListener("click", launchBall);
+      document.getElementById("reset").addEventListener("click", resetSimulation);
       animate();
     }
 
@@ -92,8 +95,19 @@
       lastTime = null;
     }
 
+    function resetSimulation() {
+      running = false;
+      position = new THREE.Vector3(0, 1.8, 0);
+      velocity = new THREE.Vector3(0, 0, 0);
+      ball.position.copy(position);
+      arrowHelper.position.copy(position);
+      arrowHelper.setDirection(new THREE.Vector3(0, 0, 0));
+      arrowHelper.setLength(0);
+    }
+
     function animate(time) {
       requestAnimationFrame(animate);
+
       if (!running) {
         renderer.render(scene, camera);
         return;
@@ -111,9 +125,9 @@
       arrowHelper.setLength(velocity.length() * 0.1);
 
       if (position.y <= 0.1) running = false;
+
       renderer.render(scene, camera);
     }
   </script>
 </body>
 </html>
-<!-- force rebuild -->
