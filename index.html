@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>3D Baseball Pitch Simulation</title>
+  <style>
+    body { margin: 0; overflow: hidden; font-family: sans-serif; }
+    canvas { display: block; }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      border-radius: 8px;
+      z-index: 10;
+    }
+    label { display: block; margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <label>Initial X Velocity: <input type="range" id="vx" min="-10" max="30" step="0.1" value="20"></label>
+    <label>Initial Y Velocity: <input type="range" id="vy" min="-10" max="20" step="0.1" value="4"></label>
+    <label>Initial Z Velocity: <input type="range" id="vz" min="-10" max="10" step="0.1" value="2"></label>
+    <button id="launch">Launch</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
+  <script>
+    let scene, camera, renderer, ball, arrowHelper;
+    let position, velocity, gravity;
+    let running = false;
+    let lastTime = null;
+
+    init();
+
+    function init() {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      renderer = new THREE.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // Ground
+      const ground = new THREE.Mesh(
+        new THREE.PlaneGeometry(100, 100),
+        new THREE.MeshBasicMaterial({ color: 0x228B22, side: THREE.DoubleSide })
+      );
+      ground.rotation.x = -Math.PI / 2;
+      scene.add(ground);
+
+      // Ball
+      const ballMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const ballGeometry = new THREE.SphereGeometry(0.1, 32, 32);
+      ball = new THREE.Mesh(ballGeometry, ballMaterial);
+      scene.add(ball);
+
+      // Arrow to show velocity vector
+      const arrowDir = new THREE.Vector3(1, 0, 0);
+      arrowHelper = new THREE.ArrowHelper(arrowDir.normalize(), new THREE.Vector3(0, 0, 0), 1, 0xff0000);
+      scene.add(arrowHelper);
+
+      // Lighting
+      const light = new THREE.DirectionalLight(0xffffff, 1);
+      light.position.set(10, 10, 10);
+      scene.add(light);
+
+      // Camera
+      camera.position.set(0, 2, 10);
+      camera.lookAt(0, 1, 0);
+
+      document.getElementById("launch").addEventListener("click", launchBall);
+      animate();
+    }
+
+    function launchBall() {
+      const vx = parseFloat(document.getElementById("vx").value);
+      const vy = parseFloat(document.getElementById("vy").value);
+      const vz = parseFloat(document.getElementById("vz").value);
+
+      position = new THREE.Vector3(0, 1.8, 0);
+      velocity = new THREE.Vector3(vx, vy, vz);
+      gravity = new THREE.Vector3(0, -9.8, 0);
+
+      ball.position.copy(position);
+      arrowHelper.position.copy(position);
+      arrowHelper.setDirection(velocity.clone().normalize());
+      arrowHelper.setLength(velocity.length() * 0.1);
+
+      running = true;
+      lastTime = null;
+    }
+
+    function animate(time) {
+      requestAnimationFrame(animate);
+      if (!running) {
+        renderer.render(scene, camera);
+        return;
+      }
+
+      if (!lastTime) lastTime = time;
+      const delta = (time - lastTime) / 1000;
+      lastTime = time;
+
+      velocity.add(gravity.clone().multiplyScalar(delta));
+      position.add(velocity.clone().multiplyScalar(delta));
+      ball.position.copy(position);
+      arrowHelper.position.copy(position);
+      arrowHelper.setDirection(velocity.clone().normalize());
+      arrowHelper.setLength(velocity.length() * 0.1);
+
+      if (position.y <= 0.1) running = false;
+      renderer.render(scene, camera);
+    }
+  </script>
+</body>
+</html>
